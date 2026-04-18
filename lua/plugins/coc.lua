@@ -1,4 +1,5 @@
 local uv = vim.uv or vim.loop
+local in_vscode = not not vim.g.vscode
 
 local function path_exists(path)
   return path ~= nil and path ~= "" and uv.fs_stat(path) ~= nil
@@ -33,16 +34,29 @@ local function discord_ipc_available()
   return false
 end
 
-return {
-  {
-    "neoclide/coc.nvim",
-    branch = "release",
-    event = "VeryLazy",
-    enabled = discord_ipc_available,
-    vscode = true,
-    init = function()
-      vim.g.coc_global_extensions = { "coc-discord-rpc" }
-      vim.g.coc_config_home = vim.fn.stdpath("config") .. "/lua/config"
-    end,
-  },
+local function coc_enabled()
+  if in_vscode then
+    return true
+  end
+
+  return discord_ipc_available()
+end
+
+local coc = {
+  "neoclide/coc.nvim",
+  branch = "release",
+  enabled = coc_enabled,
+  vscode = true,
+  init = function()
+    vim.g.coc_global_extensions = { "coc-discord-rpc" }
+    vim.g.coc_config_home = vim.fn.stdpath("config") .. "/lua/config"
+  end,
 }
+
+if in_vscode then
+  coc.lazy = false
+else
+  coc.event = "VeryLazy"
+end
+
+return { coc }
